@@ -20,23 +20,48 @@ interface Props {
   fireStats: FireStats;
 }
 
+const QUICK_PROMPTS = [
+  "現在の状況を分析して、FIRE達成に向けた具体的なアドバイスをください。",
+  "貯蓄率を高めるための節約・節税の具体策を教えてください。",
+  "年齢とFIRE目標を考慮した投資戦略をアドバイスしてください。",
+  "FIRE後のリスク（インフレ・医療費・シーケンスリスク）への備え方を教えてください。",
+  "副業・セミFIREでFIREを早める方法を提案してください。",
+];
+
 export default function AdviceClient({ fireStats }: Props) {
   const [provider, setProvider] = useState<Provider>("gemini");
   const [loading, setLoading] = useState(false);
   const [advice, setAdvice] = useState("");
-  const [prompt, setPrompt] = useState("現在の状況を分析して、FIRE達成に向けた具体的なアドバイスをください。");
+  const [prompt, setPrompt] = useState(QUICK_PROMPTS[0]);
 
   async function getAdvice() {
     setLoading(true);
     setAdvice("");
-    const res = await fetch("/api/ai", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ provider, prompt, fireStats }),
-    });
-    const data = await res.json();
-    setAdvice(data.text ?? data.error ?? "エラーが発生しました");
-    setLoading(false);
+    try {
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, prompt, fireStats }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setAdvice(data.error ?? "エラーが発生しました");
+        return;
+      }
+
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        setAdvice((prev) => prev + decoder.decode(value, { stream: true }));
+      }
+    } catch {
+      setAdvice("エラーが発生しました");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -51,12 +76,12 @@ export default function AdviceClient({ fireStats }: Props) {
         <h2 className="text-sm font-semibold text-orange-800 mb-3">AIに渡す現在のデータ</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "純資産", value: fireStats.netWorth },
-            { label: "FIRE数字", value: fireStats.fireNumber },
-            { label: "達成率", value: fireStats.fireProgress },
-            { label: "月次貯蓄", value: fireStats.monthlySavings },
-            { label: "貯蓄率", value: fireStats.savingsRate },
-            { label: "達成見込", value: fireStats.fireDate },
+            { label: "純資産",     value: fireStats.netWorth },
+            { label: "FIRE数字",   value: fireStats.fireNumber },
+            { label: "達成率",     value: fireStats.fireProgress },
+            { label: "月次貯蓄",   value: fireStats.monthlySavings },
+            { label: "貯蓄率",     value: fireStats.savingsRate },
+            { label: "達成見込",   value: fireStats.fireDate },
             { label: "FIREタイプ", value: fireStats.fireType },
             { label: "年間生活費", value: fireStats.annualExpense },
           ].map(({ label, value }) => (
@@ -68,8 +93,9 @@ export default function AdviceClient({ fireStats }: Props) {
         </div>
       </div>
 
-      {/* AIプロバイダー選択 */}
+      {/* AIプロバイダー + 入力 */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
+        {/* プロバイダー選択 */}
         <div className="flex gap-2">
           {(["gemini", "claude"] as const).map((p) => (
             <button
@@ -86,6 +112,27 @@ export default function AdviceClient({ fireStats }: Props) {
           ))}
         </div>
 
+        {/* クイック質問 */}
+        <div>
+          <p className="text-xs font-medium text-gray-500 mb-2">クイック質問</p>
+          <div className="flex flex-wrap gap-2">
+            {QUICK_PROMPTS.map((q) => (
+              <button
+                key={q}
+                onClick={() => setPrompt(q)}
+                className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                  prompt === q
+                    ? "bg-orange-100 border-orange-300 text-orange-700"
+                    : "border-gray-200 text-gray-500 hover:border-gray-300"
+                }`}
+              >
+                {q.slice(0, 18)}…
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* テキストエリア */}
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">質問・相談内容</label>
           <textarea
@@ -101,16 +148,27 @@ export default function AdviceClient({ fireStats }: Props) {
           disabled={loading || !prompt}
           className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 rounded-xl transition disabled:opacity-50"
         >
-          {loading ? "相談中..." : `${provider === "gemini" ? "Gemini" : "Claude"} に相談する`}
+          {loading ? "回答中..." : `${provider === "gemini" ? "Gemini" : "Claude"} に相談する`}
         </button>
       </div>
 
-      {/* 回答 */}
-      {advice && (
+      {/* 回答（ストリーミング） */}
+      {(advice || loading) && (
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <h2 className="font-semibold text-gray-800 mb-3">AIからのアドバイス</h2>
           <div className="prose prose-sm max-w-none text-gray-700">
-            <ReactMarkdown>{advice}</ReactMarkdown>
+            {advice
+              ? <ReactMarkdown>{advice}</ReactMarkdown>
+              : <div className="flex items-center gap-2 text-gray-400 text-sm">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-orange-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-orange-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-orange-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                  <span className="ml-1">考え中...</span>
+                </div>
+            }
+            {loading && advice && (
+              <span className="inline-block w-0.5 h-4 bg-orange-400 animate-pulse ml-0.5 align-middle" />
+            )}
           </div>
         </div>
       )}

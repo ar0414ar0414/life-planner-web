@@ -6,7 +6,7 @@ import { db } from "@/db";
 import { aiRequests } from "@/db/schema";
 import { eq, gte, count } from "drizzle-orm";
 
-const RATE_LIMIT = 10; // 1時間あたりの最大リクエスト数
+const RATE_LIMIT = 10;
 
 const aiSchema = z.object({
   provider: z.enum(["gemini", "claude"]),
@@ -31,7 +31,6 @@ export async function POST(request: Request) {
   const parsed = aiSchema.safeParse(await request.json());
   if (!parsed.success) return validationError(parsed.error);
 
-  // レート制限チェック（1時間に RATE_LIMIT 回まで）
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
   const [{ value: reqCount }] = await db
     .select({ value: count() })
@@ -41,7 +40,7 @@ export async function POST(request: Request) {
   if (reqCount >= RATE_LIMIT) {
     return NextResponse.json(
       { error: `1時間あたり${RATE_LIMIT}回までご利用いただけます。しばらく経ってから再試行してください。` },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
@@ -67,8 +66,8 @@ export async function POST(request: Request) {
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) return NextResponse.json({ error: "GEMINI_API_KEY が設定されていません" });
 
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -76,11 +75,42 @@ export async function POST(request: Request) {
             system_instruction: { parts: [{ text: systemPrompt }] },
             contents: [{ parts: [{ text: prompt }] }],
           }),
-        }
+        },
       );
-      const data = await res.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "回答を取得できませんでした";
-      return NextResponse.json({ text });
+      if (!geminiRes.ok || !geminiRes.body) {
+        return NextResponse.json({ error: "Gemini API エラー" }, { status: 500 });
+      }
+
+      const body = geminiRes.body;
+      const readable = new ReadableStream({
+        async start(controller) {
+          const reader = body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() ?? "";
+              for (const line of lines) {
+                if (line.startsWith("data: ") && !line.includes("[DONE]")) {
+                  try {
+                    const data = JSON.parse(line.slice(6));
+                    const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+                    if (text) controller.enqueue(new TextEncoder().encode(text));
+                  } catch { /* skip malformed chunks */ }
+                }
+              }
+            }
+          } finally {
+            controller.close();
+          }
+        },
+      });
+
+      return new Response(readable, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
     }
 
     if (provider === "claude") {
@@ -89,14 +119,31 @@ export async function POST(request: Request) {
 
       const { Anthropic } = await import("@anthropic-ai/sdk");
       const client = new Anthropic({ apiKey });
-      const message = await client.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1024,
-        system: systemPrompt,
-        messages: [{ role: "user", content: prompt }],
+
+      const readable = new ReadableStream({
+        async start(controller) {
+          try {
+            const stream = client.messages.stream({
+              model: "claude-sonnet-4-6",
+              max_tokens: 1024,
+              system: systemPrompt,
+              messages: [{ role: "user", content: prompt }],
+            });
+            for await (const event of stream) {
+              if (
+                event.type === "content_block_delta" &&
+                event.delta.type === "text_delta"
+              ) {
+                controller.enqueue(new TextEncoder().encode(event.delta.text));
+              }
+            }
+          } finally {
+            controller.close();
+          }
+        },
       });
-      const text = message.content[0].type === "text" ? message.content[0].text : "";
-      return NextResponse.json({ text });
+
+      return new Response(readable, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
     }
 
     return NextResponse.json({ error: "不明なプロバイダーです" }, { status: 400 });
