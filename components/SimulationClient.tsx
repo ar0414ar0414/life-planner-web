@@ -4,6 +4,7 @@ import { useState } from "react";
 import { LifeEvent } from "@/db/schema";
 import { calcGoalResults, calcYearlyProjection, formatAmount } from "@/lib/simulation";
 import { useRouter } from "next/navigation";
+import { toast } from "@/components/Toaster";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
@@ -58,26 +59,40 @@ export default function SimulationClient({
 
   async function saveEvent() {
     setSaving(true);
-    await fetch("/api/events", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        targetAmount: Number(form.targetAmount),
-        priority: Number(form.priority),
-      }),
-    });
-    setForm({ ...emptyForm });
-    setShowForm(false);
-    router.refresh();
-    setSaving(false);
+    try {
+      const res = await fetch("/api/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          targetAmount: Number(form.targetAmount),
+          priority: Number(form.priority),
+        }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success("イベントを追加しました");
+      setForm({ ...emptyForm });
+      setShowForm(false);
+      router.refresh();
+    } catch {
+      toast.error("保存に失敗しました");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function deleteEvent(id: string) {
     setDeleting(id);
-    await fetch(`/api/events?id=${id}`, { method: "DELETE" });
-    router.refresh();
-    setDeleting(null);
+    try {
+      const res = await fetch(`/api/events?id=${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      toast.success("イベントを削除しました");
+      router.refresh();
+    } catch {
+      toast.error("削除に失敗しました");
+    } finally {
+      setDeleting(null);
+    }
   }
 
   const statusColor = { ok: "text-green-600 bg-green-50", warning: "text-yellow-600 bg-yellow-50", danger: "text-red-600 bg-red-50" };

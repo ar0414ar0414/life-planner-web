@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FireSettings } from "@/db/schema";
 import { calcFireNumber, calcRequiredMonthlySavings, formatAmount } from "@/lib/simulation";
 import { useRouter } from "next/navigation";
+import { toast } from "@/components/Toaster";
 
 interface Props {
   userId: string;
@@ -46,22 +47,29 @@ export default function GoalsClient({ settings }: Props) {
 
   async function save() {
     setSaving(true);
-    await fetch("/api/goals", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        annualExpense: Number(form.annualExpense),
-        sideIncome: Number(form.sideIncome),
-        currentAge: Number(form.currentAge),
-        targetFireAge: Number(form.targetFireAge),
-        coastRetireAge: Number(form.coastRetireAge),
-        swr: (Number(form.swr) || 4) / 100,
-        annualReturnRate: Number(form.annualReturnRate),
-      }),
-    });
-    router.refresh();
-    setSaving(false);
+    try {
+      const res = await fetch("/api/goals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          annualExpense: Number(form.annualExpense),
+          sideIncome: Number(form.sideIncome),
+          currentAge: Number(form.currentAge),
+          targetFireAge: Number(form.targetFireAge),
+          coastRetireAge: Number(form.coastRetireAge),
+          swr: (Number(form.swr) || 4) / 100,
+          annualReturnRate: Number(form.annualReturnRate),
+        }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success("FIRE設定を保存しました");
+      router.refresh();
+    } catch {
+      toast.error("保存に失敗しました");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (

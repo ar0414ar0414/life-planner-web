@@ -4,6 +4,7 @@ import { useState } from "react";
 import { MonthlyFinance, Asset, Liability } from "@/db/schema";
 import { formatAmount } from "@/lib/simulation";
 import { useRouter } from "next/navigation";
+import { toast } from "@/components/Toaster";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
@@ -59,30 +60,44 @@ export default function FinanceClient({ userId, financeRows, assetRows, liabilit
 
   async function saveFinance() {
     setSaving(true);
-    await fetch("/api/finance", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        yearMonth,
-        income: Number(income) || 0,
-        fixedExpense: Number(fixedExpense) || 0,
-        variableExpense: Number(variableExpense) || 0,
-        bonus: Number(bonus) || 0,
-      }),
-    });
-    router.refresh();
-    setSaving(false);
+    try {
+      const res = await fetch("/api/finance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          yearMonth,
+          income: Number(income) || 0,
+          fixedExpense: Number(fixedExpense) || 0,
+          variableExpense: Number(variableExpense) || 0,
+          bonus: Number(bonus) || 0,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success("収支を保存しました");
+      router.refresh();
+    } catch {
+      toast.error("保存に失敗しました");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function saveAssets() {
     setSaving(true);
-    await fetch("/api/assets", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ assets: assetAmounts, liabilities: liabilityAmounts }),
-    });
-    router.refresh();
-    setSaving(false);
+    try {
+      const res = await fetch("/api/assets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assets: assetAmounts, liabilities: liabilityAmounts }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success("資産・負債を保存しました");
+      router.refresh();
+    } catch {
+      toast.error("保存に失敗しました");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
