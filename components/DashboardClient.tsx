@@ -71,7 +71,6 @@ export default function DashboardClient({
     const totalLiab = liabilityRows.reduce((s, l) => s + l.amount, 0);
     const totalAsset = assetRows.reduce((s, a) => s + a.amount, 0);
 
-    const assetRows_ = ASSET_LABELS;
     const fmt = (n: number) => n >= 10000 ? `${(n / 10000).toFixed(1)}億円` : `${n.toLocaleString()}万円`;
     const pct = (n: number) => `${n.toFixed(1)}%`;
     const fireProgressStr = fireNumber > 0 ? pct(fireProgress) : "—";
