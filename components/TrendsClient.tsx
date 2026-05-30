@@ -13,9 +13,10 @@ type Range = "3m" | "6m" | "12m" | "all";
 interface Props {
   financeRows: MonthlyFinance[];
   snapshots: AssetSnapshot[];
+  targetAnnualExpense: number | null;
 }
 
-export default function TrendsClient({ financeRows, snapshots }: Props) {
+export default function TrendsClient({ financeRows, snapshots, targetAnnualExpense }: Props) {
   const [range, setRange] = useState<Range>("6m");
 
   const sliceCount = range === "3m" ? 3 : range === "6m" ? 6 : range === "12m" ? 12 : 999;
@@ -50,6 +51,17 @@ export default function TrendsClient({ financeRows, snapshots }: Props) {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([year, d]) => ({ year, ...d, 貯蓄率: d.income > 0 ? Math.round((d.savings / d.income) * 100) : 0 }));
 
+  // 年間支出予測
+  const currentYear = new Date().getFullYear().toString();
+  const thisYearRows = financeRows.filter((f) => f.yearMonth.startsWith(currentYear));
+  const recordedMonths = thisYearRows.length;
+  const totalExpense = thisYearRows.reduce((s, f) => s + f.fixedExpense + f.variableExpense, 0);
+  const avgMonthlyExpense = recordedMonths > 0 ? totalExpense / recordedMonths : 0;
+  const predictedAnnual = recordedMonths > 0
+    ? totalExpense + avgMonthlyExpense * (12 - recordedMonths)
+    : 0;
+  const vsTarget = targetAnnualExpense !== null ? predictedAnnual - targetAnnualExpense : null;
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
@@ -71,6 +83,82 @@ export default function TrendsClient({ financeRows, snapshots }: Props) {
           ))}
         </div>
       </div>
+
+      {/* 年間支出予測 */}
+      {recordedMonths > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <div className="flex items-start justify-between flex-wrap gap-3 mb-5">
+            <div>
+              <h2 className="font-semibold text-gray-800">{currentYear}年の支出予測</h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {recordedMonths}ヶ月分の実績から残り {12 - recordedMonths}ヶ月を予測
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-gray-900">{formatAmount(Math.round(predictedAnnual))}</p>
+              {targetAnnualExpense !== null && (
+                <p className={`text-xs font-medium mt-0.5 ${vsTarget! > 0 ? "text-red-500" : "text-green-600"}`}>
+                  目標比 {vsTarget! > 0 ? "+" : ""}{formatAmount(Math.round(vsTarget!))}
+                  {vsTarget! > 0 ? "（超過見込み）" : "（目標内）"}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* 月別内訳バー (実績 vs 予測) */}
+          <div className="space-y-2">
+            {Array.from({ length: 12 }, (_, i) => {
+              const month = String(i + 1).padStart(2, "0");
+              const ym = `${currentYear}-${month}`;
+              const row = thisYearRows.find((f) => f.yearMonth === ym);
+              const expense = row ? row.fixedExpense + row.variableExpense : avgMonthlyExpense;
+              const isRecorded = !!row;
+              const maxVal = Math.max(avgMonthlyExpense * 1.5, 1);
+              const barPct = Math.min(100, (expense / maxVal) * 100);
+              return (
+                <div key={month} className="flex items-center gap-3">
+                  <span className="text-xs text-gray-400 w-6 flex-shrink-0">{i + 1}月</span>
+                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-2 rounded-full transition-all ${isRecorded ? "bg-orange-400" : "bg-orange-200"}`}
+                      style={{ width: `${barPct}%` }}
+                    />
+                  </div>
+                  <span className={`text-xs w-20 text-right flex-shrink-0 ${isRecorded ? "text-gray-700 font-medium" : "text-gray-400"}`}>
+                    {expense > 0 ? formatAmount(Math.round(expense)) : "—"}
+                    {!isRecorded && expense > 0 && <span className="text-gray-300"> *</span>}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-gray-300 mt-3">* 予測値（実績平均から算出）</p>
+
+          {/* 対目標ゲージ */}
+          {targetAnnualExpense !== null && (
+            <div className="mt-5 pt-4 border-t border-gray-50">
+              <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+                <span>FIRE目標年間生活費</span>
+                <span>{formatAmount(targetAnnualExpense)}万円</span>
+              </div>
+              <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-2.5 rounded-full transition-all ${
+                    predictedAnnual > targetAnnualExpense ? "bg-red-400" : "bg-green-400"
+                  }`}
+                  style={{ width: `${Math.min(130, (predictedAnnual / targetAnnualExpense) * 100).toFixed(1)}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-xs text-gray-400 mt-1">
+                <span>0</span>
+                <span className="text-orange-500 font-medium">
+                  {((predictedAnnual / targetAnnualExpense) * 100).toFixed(1)}%
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 収支推移 */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6">

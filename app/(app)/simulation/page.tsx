@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { lifeEvents, assets, liabilities, fireSettings, monthlyFinance } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import SimulationClient from "@/components/SimulationClient";
+import { calcFireNumber } from "@/lib/simulation";
 
 export default async function SimulationPage() {
   const supabase = await createClient();
@@ -26,6 +27,14 @@ export default async function SimulationPage() {
   const latest = recentFinance[0];
   const monthlySavings = latest ? latest.income - latest.fixedExpense - latest.variableExpense : 0;
   const annualBonus = latest?.bonus ?? 0;
+  const fireNumber = settings[0] ? calcFireNumber(settings[0]) : 0;
+  const investableAssets = assetRows
+    .filter((a) => a.type === "stock" || a.type === "ideco")
+    .reduce((s, a) => s + a.amount, 0);
+  const targetAnnualExpense = settings[0]?.annualExpense ?? 0;
+  const currentAge = settings[0]?.currentAge ?? 30;
+  const targetFireAge = settings[0]?.targetFireAge ?? 50;
+  const monthlyIncome = latest?.income ?? 0;
 
   return (
     <SimulationClient
@@ -35,6 +44,12 @@ export default async function SimulationPage() {
       monthlySavings={monthlySavings}
       annualBonus={annualBonus}
       annualReturnRate={settings[0]?.annualReturnRate ?? 5}
+      fireNumber={fireNumber}
+      investableAssets={investableAssets}
+      targetAnnualExpense={targetAnnualExpense}
+      currentAge={currentAge}
+      targetFireAge={targetFireAge}
+      monthlyIncome={monthlyIncome}
     />
   );
 }

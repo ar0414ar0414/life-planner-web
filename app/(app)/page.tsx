@@ -16,7 +16,7 @@ export default async function DashboardPage() {
     db.select().from(monthlyFinance)
       .where(eq(monthlyFinance.userId, user.id))
       .orderBy(desc(monthlyFinance.yearMonth))
-      .limit(1),
+      .limit(3),
     db.select().from(assetSnapshots)
       .where(eq(assetSnapshots.userId, user.id))
       .orderBy(desc(assetSnapshots.yearMonth))
@@ -37,7 +37,10 @@ export default async function DashboardPage() {
       monthlySavings={monthlySavings}
       settings={settings[0] ?? null}
       assetRows={assetRows}
+      liabilityRows={liabilityRows}
       snapshots={[...snapshots].reverse()}
+      recentFinance={recentFinance}
+      userId={user.id}
     />
   );
 }

@@ -13,7 +13,7 @@ export default async function FinancePage() {
     db.select().from(monthlyFinance)
       .where(eq(monthlyFinance.userId, user.id))
       .orderBy(desc(monthlyFinance.yearMonth))
-      .limit(12),
+      .limit(24),
     db.select().from(assets).where(eq(assets.userId, user.id)),
     db.select().from(liabilities).where(eq(liabilities.userId, user.id)),
   ]);
