@@ -72,6 +72,13 @@ export const assetSnapshots = pgTable("asset_snapshots", {
   recordedAt: timestamp("recorded_at").defaultNow().notNull(),
 }, (t) => [uniqueIndex("asset_snapshots_user_month").on(t.userId, t.yearMonth)]);
 
+export const aiRequests = pgTable("ai_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type AiRequest = typeof aiRequests.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type MonthlyFinance = typeof monthlyFinance.$inferSelect;
 export type Asset = typeof assets.$inferSelect;

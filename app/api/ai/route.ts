@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 import { validationError } from "@/lib/validation";
+import { db } from "@/db";
+import { aiRequests } from "@/db/schema";
+import { eq, gte, count } from "drizzle-orm";
+
+const RATE_LIMIT = 10; // 1時間あたりの最大リクエスト数
 
 const aiSchema = z.object({
   provider: z.enum(["gemini", "claude"]),
@@ -25,6 +30,22 @@ export async function POST(request: Request) {
 
   const parsed = aiSchema.safeParse(await request.json());
   if (!parsed.success) return validationError(parsed.error);
+
+  // レート制限チェック（1時間に RATE_LIMIT 回まで）
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const [{ value: reqCount }] = await db
+    .select({ value: count() })
+    .from(aiRequests)
+    .where(eq(aiRequests.userId, user.id) && gte(aiRequests.createdAt, oneHourAgo));
+
+  if (reqCount >= RATE_LIMIT) {
+    return NextResponse.json(
+      { error: `1時間あたり${RATE_LIMIT}回までご利用いただけます。しばらく経ってから再試行してください。` },
+      { status: 429 }
+    );
+  }
+
+  await db.insert(aiRequests).values({ userId: user.id });
 
   const { provider, prompt, fireStats } = parsed.data;
 
