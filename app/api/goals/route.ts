@@ -2,37 +2,24 @@ import { createClient } from "@/lib/supabase/server";
 import { db } from "@/db";
 import { fireSettings } from "@/db/schema";
 import { NextResponse } from "next/server";
+import { goalsSchema, validationError } from "@/lib/validation";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await request.json();
+  const parsed = goalsSchema.safeParse(await request.json());
+  if (!parsed.success) return validationError(parsed.error);
+
+  const data = parsed.data;
 
   await db.insert(fireSettings).values({
     userId: user.id,
-    fireType: body.fireType,
-    annualExpense: body.annualExpense,
-    sideIncome: body.sideIncome,
-    currentAge: body.currentAge,
-    targetFireAge: body.targetFireAge,
-    coastRetireAge: body.coastRetireAge,
-    swr: body.swr,
-    annualReturnRate: body.annualReturnRate,
+    ...data,
   }).onConflictDoUpdate({
     target: fireSettings.userId,
-    set: {
-      fireType: body.fireType,
-      annualExpense: body.annualExpense,
-      sideIncome: body.sideIncome,
-      currentAge: body.currentAge,
-      targetFireAge: body.targetFireAge,
-      coastRetireAge: body.coastRetireAge,
-      swr: body.swr,
-      annualReturnRate: body.annualReturnRate,
-      updatedAt: new Date(),
-    },
+    set: { ...data, updatedAt: new Date() },
   });
 
   return NextResponse.json({ ok: true });

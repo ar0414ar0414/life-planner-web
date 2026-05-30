@@ -1,12 +1,32 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { z } from "zod";
+import { validationError } from "@/lib/validation";
+
+const aiSchema = z.object({
+  provider: z.enum(["gemini", "claude"]),
+  prompt: z.string().min(1).max(1000),
+  fireStats: z.object({
+    netWorth: z.string(),
+    fireNumber: z.string(),
+    fireProgress: z.string(),
+    monthlySavings: z.string(),
+    savingsRate: z.string(),
+    fireDate: z.string(),
+    fireType: z.string(),
+    annualExpense: z.string(),
+  }),
+});
 
 export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { provider, prompt, fireStats } = await request.json();
+  const parsed = aiSchema.safeParse(await request.json());
+  if (!parsed.success) return validationError(parsed.error);
+
+  const { provider, prompt, fireStats } = parsed.data;
 
   const systemPrompt = `あなたはFIRE（Financial Independence, Retire Early）の専門アドバイザーです。
 ユーザーの現在の財務状況を分析し、具体的で実践的なアドバイスを日本語で提供してください。
