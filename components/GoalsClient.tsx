@@ -79,11 +79,14 @@ export default function GoalsClient({ settings, netWorth, monthlySavings }: Prop
           annualReturnRate: Number(form.annualReturnRate),
         }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error ?? `保存に失敗しました (${res.status})`);
+      }
       toast.success("FIRE設定を保存しました");
       router.refresh();
-    } catch {
-      toast.error("保存に失敗しました");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "保存に失敗しました");
     } finally {
       setSaving(false);
     }

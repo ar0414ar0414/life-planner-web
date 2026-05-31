@@ -66,15 +66,24 @@ export default function SimulationClient({
 
   const runMonteCarlo = useCallback(() => {
     setMcRunning(true);
-    setTimeout(() => {
-      const TRIALS = 1000;
-      const yearsToSim = Math.max(5, Math.min(50, targetFireAge - currentAge + 5));
-      const monthlyMean = annualReturnRate / 100 / 12;
-      const monthlyVol = (mcVolatility / 100) / Math.sqrt(12);
-      const yearly: number[][] = Array.from({ length: yearsToSim + 1 }, () => []);
-      let successes = 0;
 
-      for (let t = 0; t < TRIALS; t++) {
+    const TRIALS = 1000;
+    const CHUNK  = 250; // 4チャンクに分割してUIスレッドを解放
+    const yearsToSim  = Math.max(5, Math.min(50, targetFireAge - currentAge + 5));
+    const monthlyMean = annualReturnRate / 100 / 12;
+    const monthlyVol  = (mcVolatility / 100) / Math.sqrt(12);
+    const yearly: number[][] = Array.from({ length: yearsToSim + 1 }, () => []);
+    let successes = 0;
+    let processed = 0;
+
+    const pct = (arr: number[], p: number) => {
+      const s = [...arr].sort((a, b) => a - b);
+      return Math.round(s[Math.floor(s.length * p)] ?? 0);
+    };
+
+    function runChunk() {
+      const end = Math.min(processed + CHUNK, TRIALS);
+      for (let t = processed; t < end; t++) {
         let bal = netWorth;
         yearly[0].push(bal);
         let hit = bal >= fireNumber;
@@ -90,22 +99,23 @@ export default function SimulationClient({
         }
         if (hit) successes++;
       }
+      processed = end;
 
-      const pct = (arr: number[], p: number) => {
-        const s = [...arr].sort((a, b) => a - b);
-        return Math.round(s[Math.floor(s.length * p)] ?? 0);
-      };
+      if (processed < TRIALS) {
+        setTimeout(runChunk, 0); // 次チャンクまでUIに制御を返す
+      } else {
+        const points = yearly.map((data, year) => ({
+          year: currentAge + year,
+          p10: pct(data, 0.10),
+          p50: pct(data, 0.50),
+          p90: pct(data, 0.90),
+        }));
+        setMcResults({ successRate: Math.round((successes / TRIALS) * 100), points });
+        setMcRunning(false);
+      }
+    }
 
-      const points = yearly.map((data, year) => ({
-        year: currentAge + year,
-        p10: pct(data, 0.10),
-        p50: pct(data, 0.50),
-        p90: pct(data, 0.90),
-      }));
-
-      setMcResults({ successRate: Math.round((successes / TRIALS) * 100), points });
-      setMcRunning(false);
-    }, 10);
+    setTimeout(runChunk, 0); // 「計算中...」をレンダリングしてから開始
   }, [netWorth, monthlySavings, annualReturnRate, fireNumber, mcVolatility, currentAge, targetFireAge]);
 
   const defaultJoinYears = Math.max(0, currentAge - 22);
@@ -141,13 +151,16 @@ export default function SimulationClient({
           priority: Number(form.priority),
         }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error ?? `保存に失敗しました (${res.status})`);
+      }
       toast.success("イベントを追加しました");
       setForm({ ...emptyForm });
       setShowForm(false);
       router.refresh();
-    } catch {
-      toast.error("保存に失敗しました");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "保存に失敗しました");
     } finally {
       setSaving(false);
     }
@@ -157,11 +170,14 @@ export default function SimulationClient({
     setDeleting(id);
     try {
       const res = await fetch(`/api/events?id=${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error ?? `削除に失敗しました (${res.status})`);
+      }
       toast.success("イベントを削除しました");
       router.refresh();
-    } catch {
-      toast.error("削除に失敗しました");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "削除に失敗しました");
     } finally {
       setDeleting(null);
     }
@@ -439,7 +455,7 @@ export default function SimulationClient({
                 <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700">キャンセル</button>
                 <button
                   onClick={saveEvent}
-                  disabled={saving || !form.name || !form.targetAmount || !form.targetDate}
+                  disabled={saving || !form.name.trim() || Number(form.targetAmount) <= 0 || !form.targetDate}
                   className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium px-5 py-2 rounded-lg transition disabled:opacity-50"
                 >
                   {saving ? "保存中..." : "登録"}

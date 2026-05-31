@@ -67,12 +67,18 @@ export default function FinanceClient({ userId, financeRows, assetRows, liabilit
   function applyTemplate() {
     const raw = localStorage.getItem(TEMPLATE_KEY);
     if (!raw) { toast.error("テンプレートがありません"); return; }
-    const t = JSON.parse(raw) as { income: string; fixedExpense: string; variableExpense: string; bonus: string };
-    setIncome(t.income);
-    setFixedExpense(t.fixedExpense);
-    setVariableExpense(t.variableExpense);
-    setBonus(t.bonus);
-    toast.success("テンプレートを適用しました");
+    try {
+      const t = JSON.parse(raw) as { income: string; fixedExpense: string; variableExpense: string; bonus: string };
+      setIncome(t.income ?? "");
+      setFixedExpense(t.fixedExpense ?? "");
+      setVariableExpense(t.variableExpense ?? "");
+      setBonus(t.bonus ?? "");
+      toast.success("テンプレートを適用しました");
+    } catch {
+      localStorage.removeItem(TEMPLATE_KEY);
+      setHasTemplate(false);
+      toast.error("テンプレートが壊れていたため削除しました");
+    }
   }
 
   function copyPrevMonth() {
@@ -99,7 +105,12 @@ export default function FinanceClient({ userId, financeRows, assetRows, liabilit
   const [targetAlloc, setTargetAlloc] = useState<Record<string, number>>(DEFAULT_ALLOC);
   useEffect(() => {
     const raw = localStorage.getItem(ALLOC_KEY);
-    if (raw) setTargetAlloc(JSON.parse(raw) as Record<string, number>);
+    if (!raw) return;
+    try {
+      setTargetAlloc(JSON.parse(raw) as Record<string, number>);
+    } catch {
+      localStorage.removeItem(ALLOC_KEY);
+    }
   }, [ALLOC_KEY]);
 
   function updateAlloc(type: string, val: number) {
@@ -131,11 +142,14 @@ export default function FinanceClient({ userId, financeRows, assetRows, liabilit
           bonus: Number(bonus) || 0,
         }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error ?? `保存に失敗しました (${res.status})`);
+      }
       toast.success("収支を保存しました");
       router.refresh();
-    } catch {
-      toast.error("保存に失敗しました");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "保存に失敗しました");
     } finally {
       setSaving(false);
     }
@@ -149,11 +163,14 @@ export default function FinanceClient({ userId, financeRows, assetRows, liabilit
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ assets: assetAmounts, liabilities: liabilityAmounts }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error ?? `保存に失敗しました (${res.status})`);
+      }
       toast.success("資産・負債を保存しました");
       router.refresh();
-    } catch {
-      toast.error("保存に失敗しました");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "保存に失敗しました");
     } finally {
       setSaving(false);
     }
