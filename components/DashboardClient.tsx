@@ -10,6 +10,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
 } from "recharts";
+import { Coins, FileText, TrendingUp } from "lucide-react";
 
 const ASSET_TYPES_REPORT: [string, string][] = [
   ["cash", "現金・預金"], ["stock", "株・投信"],
@@ -176,7 +177,7 @@ ${settings ? `
           onClick={openReport}
           className="text-sm border border-gray-200 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-xl transition flex items-center gap-1.5"
         >
-          <span>📄</span> 月次レポート
+          <FileText className="w-4 h-4" /> 月次レポート
         </button>
       </div>
 
@@ -259,7 +260,7 @@ ${settings ? `
               </div>
             </div>
           ) : (
-            <EmptyState icon="💰" title="資産がまだありません" action={{ label: "資産を登録する", href: "/finance" }} />
+            <EmptyState icon={Coins} title="資産がまだありません" action={{ label: "資産を登録する", href: "/finance" }} />
           )}
         </div>
 
@@ -283,7 +284,7 @@ ${settings ? `
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <EmptyState icon="📈" title="純資産の推移データがありません" description="資産スナップショットは月初に自動記録されます" />
+            <EmptyState icon={TrendingUp} title="純資産の推移データがありません" description="資産スナップショットは月初に自動記録されます" />
           )}
         </div>
       </div>

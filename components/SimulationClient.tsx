@@ -13,6 +13,7 @@ import { toast } from "@/components/Toaster";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine,
 } from "recharts";
+import { Rocket, Calendar, Landmark, Heart } from "lucide-react";
 
 const EVENT_TYPES = [
   { value: "housing", label: "住宅" },
@@ -291,7 +292,7 @@ export default function SimulationClient({
 
               {saved > 0 && (
                 <div className="flex items-center gap-3 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100 rounded-xl px-5 py-4">
-                  <span className="text-2xl">🚀</span>
+                  <Rocket className="w-6 h-6 text-orange-500" />
                   <div>
                     <p className="font-bold text-orange-700">
                       {savedYears > 0 && `${savedYears}年`}{savedMo > 0 && `${savedMo}ヶ月`} 早くFIREできます！
@@ -498,9 +499,9 @@ export default function SimulationClient({
 
           {goalResults.length === 0 && !showForm && (
             <div className="text-center py-12 text-gray-400">
-              <p className="text-4xl mb-3">📅</p>
-              <p className="text-sm">ライフイベントがまだありません</p>
-              <p className="text-xs mt-1">「+ イベント追加」から登録してください</p>
+              <Calendar className="w-10 h-10 text-gray-300 mb-3" strokeWidth={1.5} />
+              <p className="text-sm text-gray-500">ライフイベントがまだありません</p>
+              <p className="text-xs text-gray-400 mt-1">「+ イベント追加」から登録してください</p>
             </div>
           )}
         </div>
@@ -535,7 +536,7 @@ export default function SimulationClient({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="bg-red-50 rounded-xl p-5 space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">🏯</span>
+                  <Landmark className="w-5 h-5 text-red-600" />
                   <h3 className="font-semibold text-red-800 text-sm">ふるさと納税</h3>
                 </div>
                 <p className="text-2xl font-bold text-red-700">{furusato}万円</p>
@@ -548,7 +549,7 @@ export default function SimulationClient({
 
               <div className="bg-purple-50 rounded-xl p-5 space-y-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">💜</span>
+                  <Heart className="w-5 h-5 text-purple-500 fill-purple-200" />
                   <h3 className="font-semibold text-purple-800 text-sm">iDeCo節税</h3>
                 </div>
                 <div className="space-y-1.5">

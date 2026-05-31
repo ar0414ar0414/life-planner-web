@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { Flame, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { NAV_ITEMS } from "@/lib/nav-items";
@@ -21,7 +21,7 @@ export default function Sidebar() {
     <aside className="hidden md:flex fixed left-0 top-0 h-full w-60 bg-white border-r border-gray-100 flex-col">
       <div className="px-6 py-5 border-b border-gray-100">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">🔥</span>
+          <Flame className="w-6 h-6 text-orange-500" />
           <span className="font-bold text-gray-900 text-lg">FIRE Navi</span>
         </div>
       </div>

@@ -8,6 +8,7 @@ import {
   ResponsiveContainer, Legend, AreaChart, Area,
 } from "recharts";
 import EmptyState from "@/components/EmptyState";
+import { BarChart2, Landmark } from "lucide-react";
 
 type Range = "3m" | "6m" | "12m" | "all";
 
@@ -189,7 +190,7 @@ export default function TrendsClient({ financeRows, snapshots, targetAnnualExpen
             </ComposedChart>
           </ResponsiveContainer>
         ) : (
-          <EmptyState icon="📊" title="収支データがありません" description="収支・資産ページから月次データを入力してください" action={{ label: "収支を入力する", href: "/finance" }} />
+          <EmptyState icon={BarChart2} title="収支データがありません" description="収支・資産ページから月次データを入力してください" action={{ label: "収支を入力する", href: "/finance" }} />
         )}
       </div>
 
@@ -213,7 +214,7 @@ export default function TrendsClient({ financeRows, snapshots, targetAnnualExpen
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <EmptyState icon="🏦" title="資産スナップショットがありません" description="収支・資産ページで資産を登録するとグラフが表示されます" action={{ label: "資産を登録する", href: "/finance" }} />
+          <EmptyState icon={Landmark} title="資産スナップショットがありません" description="収支・資産ページで資産を登録するとグラフが表示されます" action={{ label: "資産を登録する", href: "/finance" }} />
         )}
       </div>
 

@@ -3,6 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { createClient } from "@/lib/supabase/client";
+import { Flame } from "lucide-react";
 import { useState } from "react";
 
 export default function LoginPage() {
@@ -22,8 +23,10 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 w-full max-w-sm text-center">
-        <div className="text-4xl mb-2">🔥</div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Life Planner</h1>
+        <div className="flex justify-center mb-2">
+          <Flame className="w-10 h-10 text-orange-500" />
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">FIRE Navi</h1>
         <p className="text-sm text-gray-500 mb-8">FIRE達成への道をトラッキング</p>
         <button
           onClick={handleGoogleLogin}

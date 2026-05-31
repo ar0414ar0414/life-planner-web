@@ -1,16 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { PartyPopper, Flame, Zap, Sprout, Sparkles, type LucideIcon } from "lucide-react";
 
-const MILESTONES = [
-  { pct: 100, label: "FIRE達成！", sub: "夢が現実になりました！おめでとうございます！", grad: "from-yellow-400 to-orange-500", icon: "🎉" },
-  { pct: 75, label: "75% 突破！", sub: "ゴールまであと25%！もう少しです！", grad: "from-orange-400 to-rose-500", icon: "🔥" },
-  { pct: 50, label: "折り返し地点！", sub: "FIRE達成率50%を超えました！", grad: "from-violet-500 to-blue-500", icon: "⚡" },
-  { pct: 25, label: "25% 達成！", sub: "着実に資産が育っています！", grad: "from-teal-400 to-cyan-500", icon: "🌱" },
-  { pct: 10, label: "10% 達成！", sub: "FIREへの旅が始まりました！", grad: "from-green-400 to-emerald-500", icon: "✨" },
-] as const;
+const MILESTONES: { pct: number; label: string; sub: string; grad: string; icon: LucideIcon }[] = [
+  { pct: 100, label: "FIRE達成！", sub: "夢が現実になりました！おめでとうございます！", grad: "from-yellow-400 to-orange-500", icon: PartyPopper },
+  { pct: 75, label: "75% 突破！", sub: "ゴールまであと25%！もう少しです！", grad: "from-orange-400 to-rose-500", icon: Flame },
+  { pct: 50, label: "折り返し地点！", sub: "FIRE達成率50%を超えました！", grad: "from-violet-500 to-blue-500", icon: Zap },
+  { pct: 25, label: "25% 達成！", sub: "着実に資産が育っています！", grad: "from-teal-400 to-cyan-500", icon: Sprout },
+  { pct: 10, label: "10% 達成！", sub: "FIREへの旅が始まりました！", grad: "from-green-400 to-emerald-500", icon: Sparkles },
+];
 
 type Milestone = (typeof MILESTONES)[number];
+
 
 export default function MilestoneBanner({ fireProgress, userId }: { fireProgress: number; userId: string }) {
   const [current, setCurrent] = useState<Milestone | null>(null);
@@ -72,8 +74,8 @@ export default function MilestoneBanner({ fireProgress, userId }: { fireProgress
         ))}
 
         <div className="relative flex items-center gap-4">
-          <span className="text-5xl" style={{ animation: "ms-pop 0.6s 0.1s ease-out both" }}>
-            {current.icon}
+          <span style={{ animation: "ms-pop 0.6s 0.1s ease-out both" }}>
+            <current.icon className="w-12 h-12 text-white" strokeWidth={1.5} />
           </span>
           <div className="flex-1">
             <p className="text-xl font-bold leading-tight">{current.label}</p>
