@@ -22,7 +22,7 @@ export default function Sidebar() {
       <div className="px-6 py-5 border-b border-gray-100">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🔥</span>
-          <span className="font-bold text-gray-900 text-lg">Life Planner</span>
+          <span className="font-bold text-gray-900 text-lg">FIRE Navi</span>
         </div>
       </div>
 
