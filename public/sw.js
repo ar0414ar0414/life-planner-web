@@ -1,4 +1,4 @@
-const CACHE_NAME = "life-planner-v1";
+const CACHE_NAME = "fire-navi-v1";
 
 // キャッシュするリソース（アプリシェル）
 const APP_SHELL = [

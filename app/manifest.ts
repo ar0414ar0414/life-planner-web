@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Life Planner — FIREへの道",
-    short_name: "Life Planner",
+    name: "FIRE Navi",
+    short_name: "FIRE Navi",
     description: "資産・収支・FIRE達成をトラッキングするパーソナルファイナンスアプリ",
     start_url: "/",
     display: "standalone",

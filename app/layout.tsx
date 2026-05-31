@@ -14,12 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Life Planner",
+  title: "FIRE Navi",
   description: "資産・収支・FIRE達成をトラッキングするパーソナルファイナンスアプリ",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Life Planner",
+    title: "FIRE Navi",
   },
   icons: {
     apple: "/icons/apple-touch-icon.png",
