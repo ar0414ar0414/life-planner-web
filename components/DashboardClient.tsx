@@ -2,6 +2,7 @@
 
 import { Asset, FireSettings, AssetSnapshot, Liability, MonthlyFinance } from "@/db/schema";
 import MilestoneBanner from "@/components/MilestoneBanner";
+import EmptyState from "@/components/EmptyState";
 import {
   calcFireNumber, calcMonthsToFire, monthsToAchieveDate, formatAmount,
 } from "@/lib/simulation";
@@ -258,7 +259,7 @@ ${settings ? `
               </div>
             </div>
           ) : (
-            <p className="text-sm text-gray-400 text-center py-8">資産を登録してください</p>
+            <EmptyState icon="💰" title="資産がまだありません" action={{ label: "資産を登録する", href: "/finance" }} />
           )}
         </div>
 
@@ -282,7 +283,7 @@ ${settings ? `
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-sm text-gray-400 text-center py-8">データが不足しています</p>
+            <EmptyState icon="📈" title="純資産の推移データがありません" description="資産スナップショットは月初に自動記録されます" />
           )}
         </div>
       </div>

@@ -102,7 +102,7 @@ export default function GoalsClient({ settings, netWorth, monthlySavings }: Prop
       {/* FIRE種別 */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
         <h2 className="font-semibold text-gray-800 mb-3">FIREの種類</h2>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
           {(["fire", "semi", "coast", "fat", "lean"] as const).map((type) => {
             const labels: Record<string, { label: string; desc: string }> = {
               fire:  { label: "FIRE",     desc: "完全リタイア" },

@@ -7,6 +7,7 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend, AreaChart, Area,
 } from "recharts";
+import EmptyState from "@/components/EmptyState";
 
 type Range = "3m" | "6m" | "12m" | "all";
 
@@ -87,6 +88,15 @@ export default function TrendsClient({ financeRows, snapshots, targetAnnualExpen
       {/* 年間支出予測 */}
       {recordedMonths > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          {recordedMonths < 3 && (
+            <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-4 py-2.5 mb-4">
+              <span>⚠️</span>
+              <span>
+                データが {recordedMonths} ヶ月分しかないため予測精度が低い場合があります。
+                3 ヶ月以上入力すると信頼度が上がります。
+              </span>
+            </div>
+          )}
           <div className="flex items-start justify-between flex-wrap gap-3 mb-5">
             <div>
               <h2 className="font-semibold text-gray-800">{currentYear}年の支出予測</h2>
@@ -179,7 +189,7 @@ export default function TrendsClient({ financeRows, snapshots, targetAnnualExpen
             </ComposedChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-sm text-gray-400 text-center py-8">収支データを入力してください</p>
+          <EmptyState icon="📊" title="収支データがありません" description="収支・資産ページから月次データを入力してください" action={{ label: "収支を入力する", href: "/finance" }} />
         )}
       </div>
 
@@ -203,7 +213,7 @@ export default function TrendsClient({ financeRows, snapshots, targetAnnualExpen
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-sm text-gray-400 text-center py-8">資産データを入力してください</p>
+          <EmptyState icon="🏦" title="資産スナップショットがありません" description="収支・資産ページで資産を登録するとグラフが表示されます" action={{ label: "資産を登録する", href: "/finance" }} />
         )}
       </div>
 

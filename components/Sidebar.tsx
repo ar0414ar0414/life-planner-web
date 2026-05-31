@@ -2,20 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard, Wallet, Target, TrendingUp, BarChart2, MessageSquare, LogOut,
-} from "lucide-react";
+import { LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-
-const navItems = [
-  { href: "/", label: "ダッシュボード", icon: LayoutDashboard },
-  { href: "/finance", label: "収支・資産", icon: Wallet },
-  { href: "/goals", label: "FIRE設定", icon: Target },
-  { href: "/simulation", label: "シミュレーション", icon: TrendingUp },
-  { href: "/trends", label: "トレンド", icon: BarChart2 },
-  { href: "/advice", label: "AI相談", icon: MessageSquare },
-];
+import { NAV_ITEMS } from "@/lib/nav-items";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -37,7 +27,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map(({ href, label, icon: Icon }) => {
+        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const active = pathname === href;
           return (
             <Link
