@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import BottomNav from "@/components/BottomNav";
+import MobileHeader from "@/components/MobileHeader";
 import Toaster from "@/components/Toaster";
 import { ensurePrevMonthSnapshot } from "@/lib/autoSnapshot";
 
@@ -15,8 +16,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+      <MobileHeader />
       <Sidebar />
-      <main className="flex-1 md:ml-60 p-4 md:p-8 min-h-screen pb-20 md:pb-8">{children}</main>
+      <main className="flex-1 md:ml-60 p-4 md:p-8 min-h-screen pt-[4.5rem] md:pt-8 pb-20 md:pb-8">{children}</main>
       <BottomNav />
       <Toaster />
     </div>
